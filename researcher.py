@@ -52,7 +52,7 @@ class Researcher:
     def __init__(self, llm: LLMInterface, cognition_base: CognitionBase):
         self.llm = llm
         self.cognition_base = cognition_base
-        self.proposals: List[Dict[str, Any]] = []
+        self.proposal_history = []  # Track all proposals for refinement
 
     def _build_prompt(self, goal: str, strategies: List[str]) -> str:
         composed = _compose_strategies(strategies)
@@ -115,6 +115,68 @@ class Researcher:
             "strategies_used": strategies or [],
             "notes": previous_feedback or "",
         }
-        self.proposals.append(proposal)
+        self.proposal_history.append(proposal)
         logger.info("Solution proposal generated successfully")
         return proposal
+
+    def refine_proposal(self, previous_proposal: Dict[str, Any], previous_attempt: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Refine a previous proposal based on feedback from the previous attempt.
+        
+        Args:
+            previous_proposal: The last proposal that was tested
+            previous_attempt: The test results and error information from the previous attempt
+            
+        Returns:
+            A new refined proposal based on the feedback
+        """
+        logger.info(f"Refining proposal for goal: {previous_proposal['goal']}")
+        
+        # Build comprehensive feedback from the previous attempt
+        feedback_parts = []
+        
+        # Add the previous solution for context
+        feedback_parts.append("Previous solution attempted:")
+        feedback_parts.append(previous_proposal.get('solution', ''))
+        
+        # Add error information if available
+        if previous_attempt.get('error'):
+            feedback_parts.append(f"\nError encountered: {previous_attempt['error']}")
+        
+        # Add any issues identified
+        if previous_attempt.get('issues'):
+            feedback_parts.append(f"\nIssues identified: {', '.join(previous_attempt['issues'])}")
+        
+        # Add output information if available
+        if previous_attempt.get('output'):
+            output_preview = previous_attempt['output'][:200]
+            feedback_parts.append(f"\nOutput produced: {output_preview}")
+            if not previous_attempt.get('success'):
+                feedback_parts.append("Note: The output did not fully meet the goal requirements.")
+        
+        # Add suggestions based on the type of failure
+        if not previous_attempt.get('success'):
+            feedback_parts.append("\nPlease address the above issues and generate an improved solution.")
+            if 'timeout' in str(previous_attempt.get('error', '')).lower():
+                feedback_parts.append("The solution was too slow. Consider optimizing the algorithm.")
+            elif 'syntax' in str(previous_attempt.get('error', '')).lower():
+                feedback_parts.append("There was a syntax error. Ensure the Python code is valid.")
+            elif 'name' in str(previous_attempt.get('error', '')).lower():
+                feedback_parts.append("There was a name error. Check variable and function definitions.")
+        
+        # Combine all feedback
+        comprehensive_feedback = "\n".join(feedback_parts)
+        
+        # Generate a refined proposal using the existing propose_solution method
+        refined_proposal = self.propose_solution(
+            goal=previous_proposal['goal'],
+            previous_feedback=comprehensive_feedback
+        )
+        
+        # Add metadata about the refinement
+        refined_proposal['refinement_iteration'] = len(self.proposal_history)
+        refined_proposal['refined_from'] = self.proposal_history.index(previous_proposal) if previous_proposal in self.proposal_history else -1
+        
+        logger.info(f"Proposal refined successfully (iteration {refined_proposal['refinement_iteration']})")
+        
+        return refined_proposal

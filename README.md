@@ -67,6 +67,19 @@ Windows Optimized: Colored output and Windows-friendly paths
 "Solve the Tower of Hanoi problem with 4 disks"
 "Find all perfect numbers less than 10000"
 
+## Testing ASI-GO-3's Learning
+### After running several problems, try these to test if the system has learned:
+
+"Create an efficient function to check if a number is prime"
+### After solving prime-related problems, this tests if ASI-GO-3 has learned optimization patterns.
+
+"Implement the most efficient sorting algorithm you know"
+### Tests if the system has accumulated knowledge about sorting algorithms.
+
+"Solve a string manipulation problem using the best approach you've learned"
+### Tests transfer learning and pattern application.
+
+
 ## Architecture
 The system follows a cyclic process:
 
