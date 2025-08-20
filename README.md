@@ -2,7 +2,7 @@
 Artificial SuperIntelligence GO type
 # ASI-GO-3: Autonomous System Intelligence - General Optimizer
 
-A simplified implementation of the ASI-ARCH architecture for general problem-solving tasks.
+A simplified implementation of the ASI-ARCH architecture for general problem-solving tasks. This is the upgraded version according to chapters 3-7 in the book.
 
 ## Overview
 
